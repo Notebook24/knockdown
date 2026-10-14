@@ -9,6 +9,7 @@ public class PlayerController : MonoBehaviour
     public float baseJumpSpeed = 7f;
     public float gravity = -20f;
     [HideInInspector] public bool canMove = true;
+    [HideInInspector] public bool flipOnRespawn = true;   // true = turn 180° on respawn (original behavior)
 
     [Header("Look")]
     public float mouseSensitivity = 0.05f;
@@ -160,7 +161,7 @@ public class PlayerController : MonoBehaviour
     public void AddMoveSpeed(float bonus) { CurrentMoveSpeed += bonus; }
     public void AddJumpBonus(float bonus) { CurrentJumpSpeed += bonus; }
 
-    // NEW: sets where you respawn (GameManager uses this for each level)
+    // Sets where you respawn (GameManager uses this for each level)
     public void SetCheckpoint(Vector3 position, Quaternion rotation)
     {
         startPosition = position;
@@ -171,7 +172,8 @@ public class PlayerController : MonoBehaviour
     {
         RespawnCount++;
         controller.enabled = false;
-        transform.SetPositionAndRotation(startPosition, startRotation * Quaternion.Euler(0f, 180f, 0f));
+        transform.SetPositionAndRotation(startPosition,
+            startRotation * Quaternion.Euler(0f, flipOnRespawn ? 180f : 0f, 0f));
         controller.enabled = true;
         verticalVelocity = 0f;
         pitch = 0f;

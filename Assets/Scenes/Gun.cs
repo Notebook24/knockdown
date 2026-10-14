@@ -3,18 +3,19 @@ using UnityEngine.InputSystem;
 
 public class Gun : MonoBehaviour
 {
+    // Still set in the Inspector (drag-and-drop references)
     public GameObject bulletPrefab;
     public Transform firePoint;
-    public float bulletSpeed = 40f;
-    public float fireRate = 0.2f;
-    public float maxAimDistance = 200f;
-    public float bulletLifetime = 5f;
 
-    [Header("Ammo")]
-    public int maxAmmo = 25;
+    // ---- Tuning: change these HERE. They no longer show in the Inspector. ----
+    const float bulletSpeed = 60f;
+    const float fireRate = 0.2f;
+    const float maxAimDistance = 500f;
+    const float bulletLifetime = 5f;
+    const int defaultMaxAmmo = 25;       // level 1; GameManager changes it per level
+    const float fontScreenHeight = 0.08f;
 
-    [Header("Counter UI")]
-    [Range(0.03f, 0.2f)] public float fontScreenHeight = 0.08f;
+    int maxAmmo = defaultMaxAmmo;
 
     public int Ammo { get; private set; }
     [HideInInspector] public bool canShoot = true;   // GameManager turns this off on game over / win
@@ -74,7 +75,7 @@ public class Gun : MonoBehaviour
     void OnGUI()
     {
         DrawCrosshair();
-        
+
         GUIStyle style = new GUIStyle();
         style.fontSize = Mathf.RoundToInt(Screen.height * fontScreenHeight);
         style.fontStyle = FontStyle.Bold;
@@ -103,7 +104,7 @@ public class Gun : MonoBehaviour
 
         Texture2D tex = Texture2D.whiteTexture;
 
-        // Black outline first, then the white/green lines on top
+        // Black outline first, then the green lines on top
         for (int pass = 0; pass < 2; pass++)
         {
             float e = pass == 0 ? o : 0f;
@@ -115,5 +116,13 @@ public class Gun : MonoBehaviour
             GUI.DrawTexture(new Rect(cx - th / 2 - e, cy + gap - e,       th + 2 * e, len + 2 * e), tex);  // bottom
         }
         GUI.color = Color.white;
+    }
+
+    // Changes the ammo cap and refills (used when a level starts)
+    public void SetMaxAmmo(int value)
+    {
+        maxAmmo = value;
+        Ammo = maxAmmo;
+        canShoot = true;
     }
 }

@@ -8,7 +8,7 @@ public class GameManager : MonoBehaviour
     public class Level
     {
         public Transform targetsRoot;      // parent of the targets (e.g. "Targets")
-        public Transform targetPlatform;   // the platform the targets sit on (e.g. "TargetPlatform")
+        public Transform targetPlatform;   // the platform(s) the targets sit on (e.g. "TargetPlatform")
         public Transform playerSpawn;      // where you stand for this level (empty for level 1)
     }
 
@@ -17,7 +17,7 @@ public class GameManager : MonoBehaviour
 
     public float lastBulletWait = 5f;     // seconds to wait after the last bullet
     public float heightTolerance = 0.3f;  // how far below the platform top still counts as "on" it
-    public float platformMargin = 1f;     // extra sideways room around the platform
+    public float platformMargin = 1f;     // extra sideways room around each platform
 
     enum State { Playing, Waiting, GameOver, Win }
     State state = State.Playing;
@@ -28,7 +28,8 @@ public class GameManager : MonoBehaviour
 
     Gun gun;
     PlayerController player;
-    Bounds platformBounds;
+    Bounds platformBounds;                // whole TargetPlatform (used for the player's look direction)
+    Bounds[] platformPieces;              // every individual platform under TargetPlatform
     Transform[] targets;
 
     void Start()
@@ -80,10 +81,15 @@ public class GameManager : MonoBehaviour
         currentLevel = index;
         Level lvl = levels[index];
 
+        // Level 2 (index 1): 35 bullets and respawn facing the other way
+        bool isLevel2 = index == 1;
+        int ammoForLevel = isLevel2 ? 35 : 25;
+        if (player != null) player.flipOnRespawn = !isLevel2;   // must be set BEFORE the Respawn() below
+
         if (lvl.targetsRoot == null || lvl.targetPlatform == null)
             Debug.LogWarning("GameManager: level " + (index + 1) + " is missing Targets Root or Target Platform.");
 
-        // Remember all targets of this level and the platform area
+        // Remember all targets of this level
         if (lvl.targetsRoot != null)
         {
             targets = new Transform[lvl.targetsRoot.childCount];
@@ -91,7 +97,17 @@ public class GameManager : MonoBehaviour
         }
         else targets = new Transform[0];
 
-        if (lvl.targetPlatform != null) platformBounds = GetBounds(lvl.targetPlatform);
+        // Remember the platform area
+        if (lvl.targetPlatform != null)
+        {
+            platformBounds = GetBounds(lvl.targetPlatform);   // used for the player's look direction
+
+            // One bounds per renderer, so each platform is checked on its own
+            Renderer[] rs = lvl.targetPlatform.GetComponentsInChildren<Renderer>();
+            platformPieces = new Bounds[rs.Length];
+            for (int i = 0; i < rs.Length; i++) platformPieces[i] = rs[i].bounds;
+        }
+        else platformPieces = new Bounds[0];
 
         if (teleport && lvl.playerSpawn != null && player != null)
         {
@@ -106,7 +122,7 @@ public class GameManager : MonoBehaviour
             player.Respawn();
         }
 
-        if (gun != null) gun.ResetAmmo();
+        if (gun != null) gun.SetMaxAmmo(ammoForLevel);   // sets the cap and refills
         if (player != null) player.canMove = true;
         state = State.Playing;
     }
@@ -166,7 +182,7 @@ public class GameManager : MonoBehaviour
         if (player != null) player.canMove = false;
     }
 
-    // Number of targets still standing on the platform
+    // Number of targets still standing on ANY platform
     int TargetsLeft()
     {
         int count = 0;
@@ -175,10 +191,13 @@ public class GameManager : MonoBehaviour
             if (t == null) continue;   // destroyed = knocked down
 
             Vector3 c = GetBounds(t).center;
-            bool above = c.y > platformBounds.max.y - heightTolerance;
-            bool inside = c.x > platformBounds.min.x - platformMargin && c.x < platformBounds.max.x + platformMargin
-                       && c.z > platformBounds.min.z - platformMargin && c.z < platformBounds.max.z + platformMargin;
-            if (above && inside) count++;
+            foreach (Bounds p in platformPieces)
+            {
+                bool above = c.y > p.max.y - heightTolerance;
+                bool inside = c.x > p.min.x - platformMargin && c.x < p.max.x + platformMargin
+                           && c.z > p.min.z - platformMargin && c.z < p.max.z + platformMargin;
+                if (above && inside) { count++; break; }   // on this platform, count it once
+            }
         }
         return count;
     }
