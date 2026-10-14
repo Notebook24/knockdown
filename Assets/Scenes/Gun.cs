@@ -7,13 +7,19 @@ public class Gun : MonoBehaviour
     public GameObject bulletPrefab;
     public Transform firePoint;
 
+    [Header("Sounds (drag audio clips here)")]
+    public AudioClip fireClip;       // plays every time a bullet is fired
+    public AudioClip hitClip;        // plays every time a bullet hits a target
+
     // ---- Tuning: change these HERE. They no longer show in the Inspector. ----
-    const float bulletSpeed = 60f;
+    const float bulletSpeed = 50f;
     const float fireRate = 0.2f;
-    const float maxAimDistance = 500f;
+    const float maxAimDistance = 200f;
     const float bulletLifetime = 5f;
     const int defaultMaxAmmo = 25;       // level 1; GameManager changes it per level
     const float fontScreenHeight = 0.08f;
+    const float fireVolume = 0.6f;
+    const float hitVolume = 1f;
 
     int maxAmmo = defaultMaxAmmo;
 
@@ -55,6 +61,8 @@ public class Gun : MonoBehaviour
     {
         if (bulletPrefab == null || firePoint == null) return;
 
+        Bullet.Play2D(fireClip, fireVolume);   // fire sound
+
         Ray ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
         Vector3 target = ray.origin + ray.direction * maxAimDistance;
         if (Physics.Raycast(ray, out RaycastHit hit, maxAimDistance, ~0, QueryTriggerInteraction.Ignore))
@@ -62,6 +70,13 @@ public class Gun : MonoBehaviour
 
         Vector3 dir = (target - firePoint.position).normalized;
         GameObject bullet = Instantiate(bulletPrefab, firePoint.position, Quaternion.LookRotation(dir));
+
+        // Give the bullet its hit sound
+        if (bullet.TryGetComponent(out Bullet b))
+        {
+            b.hitClip = hitClip;
+            b.hitVolume = hitVolume;
+        }
 
         if (player != null && bullet.TryGetComponent(out Collider bulletCol))
             Physics.IgnoreCollision(bulletCol, player.Controller);
