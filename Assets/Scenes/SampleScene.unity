@@ -46011,6 +46011,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Gun
   bulletPrefab: {fileID: 6883385571381026617, guid: 1cca22e835eb6524ebae0924b1cd5602, type: 3}
   firePoint: {fileID: 1263395431}
+  fireClip: {fileID: 8300000, guid: 609dcb9f9d6e8864d83a250868675aa0, type: 3}
+  hitClip: {fileID: 8300000, guid: b5c8b6d9aff0f1c4cbff7e16b45a3183, type: 3}
   canShoot: 1
 --- !u!1 &2108458830
 GameObject:
